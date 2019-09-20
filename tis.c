@@ -168,6 +168,10 @@ size_t tis_recv(struct tpmbuff *buf)
 	hdr->size = be32_to_cpu(hdr->size);
 	hdr->code = be32_to_cpu(hdr->code);
 
+	/* protect against integer underflow */
+	if (hdr->size <= expected)
+		goto err;
+
 	/* hdr->size = header + data */
 	expected = hdr->size - expected;
 	buf_ptr = tpmb_put(buf, expected);
