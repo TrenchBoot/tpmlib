@@ -18,13 +18,11 @@ u16 tpm2_null_auth_size(void)
 	return NULL_AUTH_SIZE;
 }
 
-u16 tpm2_null_auth(u8 *b)
+u16 tpm2_null_auth(struct tpms_auth_cmd *a)
 {
-	u32 *handle = (u32 *)b;
+	memset(a, 0, NULL_AUTH_SIZE);
 
-	memset(b, 0, NULL_AUTH_SIZE);
-
-	*handle = cpu_to_be32(TPM_RS_PW);
+	*a->handle = cpu_to_be32(TPM_RS_PW);
 
 	return NULL_AUTH_SIZE;
 }

@@ -12,7 +12,9 @@
 #ifndef _TPM2_AUTH_H
 #define _TPM2_AUTH_H
 
+#include "tpm2.h"
+
 u16 tpm2_null_auth_size(void);
-u16 tpm2_null_auth(u8 *b);
+u16 tpm2_null_auth(struct tpms_auth_cmd *a);
 
 #endif
