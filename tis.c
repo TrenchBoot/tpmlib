@@ -40,13 +40,13 @@ void tis_relinquish_locality(void)
         locality = TPM_NO_LOCALITY;
 }
 
-s8 tis_request_locality(u8 l)
+u8 tis_request_locality(u8 l)
 {
         if (l > TPM_MAX_LOCALITY)
-                return -EINVAL;
+                return TPM_NO_LOCALITY;
 
 	if (l == locality)
-		return 0;
+		return locality;
 
 	tis_relinquish_locality();
 
@@ -56,7 +56,7 @@ s8 tis_request_locality(u8 l)
         if (tpm_read8(ACCESS(l)) & ACCESS_ACTIVE_LOCALITY)
                 locality = l;
 
-        return 0;
+        return locality;
 }
 
 u8 tis_init(struct tpm *t)
