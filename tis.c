@@ -87,7 +87,10 @@ size_t tis_send(struct tpmbuff *buf)
 	if (locality > TPM_MAX_LOCALITY)
 		return 0;
 
-	tpm_write8(STS_COMMAND_READY, STS(locality));
+	for (status = 0; (status & STS_COMMAND_READY) == 0; ) {
+	       tpm_write8(STS_COMMAND_READY, STS(locality));
+	       status = tpm_read8(STS(locality));
+	}
 
 	buf_ptr = buf->head;
 
@@ -144,7 +147,7 @@ static size_t recv_data(unsigned char *buf, size_t len)
 	return size;
 }
 
-size_t tis_recv(struct tpmbuff *buf)
+size_t tis_recv(enum tpm_family f, struct tpmbuff *buf)
 {
 	u32 expected;
 	u8 status, *buf_ptr;
@@ -154,8 +157,15 @@ size_t tis_recv(struct tpmbuff *buf)
 		goto err;
 
 	/* ensure that there is data available */
-	if (! tis_data_available(locality))
-		goto err;
+	if (!tis_data_available(locality)) {
+		if (f == TPM12)
+			tpm1_timeout_d();
+		else
+			tpm2_timeout_d();
+
+		if (!tis_data_available(locality))
+			goto err;
+	}
 
 	/* read header */
 	hdr = (struct tpm_header *)buf->head;

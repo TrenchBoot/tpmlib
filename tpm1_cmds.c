@@ -76,7 +76,7 @@ u8 tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 		/* Not implemented yet */
 		break;
 	case TPM_TIS:
-		if (tpmb_size(b) != tis_recv(b))
+		if (tpmb_size(b) != tis_recv(t->family, b))
 			goto free;
 		break;
 	case TPM_CRB:
