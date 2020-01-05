@@ -32,6 +32,8 @@ u8 *tpmb_reserve(struct tpmbuff *b)
 
 void tpmb_free(struct tpmbuff *b)
 {
+	memset(b->head, 0, b->len);
+
 	b->len = 0;
 	b->locked = 0;
 	b->data = NULL;
