@@ -31,7 +31,7 @@ static int tpm2_alloc_cmd(struct tpmbuff *b, struct tpm2_cmd *c, u16 tag,
 static u16 convert_digest_list(struct tpml_digest_values *digests)
 {
 	int i;
-	u16 size = 0;
+	u16 size = sizeof(digests->count);
 	struct tpmt_ha *h = digests->digests;
 
 	for (i=0; i<digests->count; i++) {
@@ -66,6 +66,8 @@ static u16 convert_digest_list(struct tpml_digest_values *digests)
 		}
 	}
 
+	digests->count = cpu_to_be32(digests->count);
+
 	return size;
 }
 
@@ -80,35 +82,40 @@ int tpm2_extend_pcr(struct tpm *t, u32 pcr,
 
 	ret = tpm2_alloc_cmd(b, &cmd, TPM_ST_SESSIONS, TPM_CC_PCR_EXTEND);
 	if (ret < 0)
-		return ret;
+		goto out;
 
 	cmd.handles = (u32 *)tpmb_put(b, sizeof(u32));
 	if (cmd.handles == NULL) {
-		tpmb_free(b);
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto free;
 	}
 
-	*cmd.handles = cpu_to_be32(pcr);
+	cmd.handles[0] = cpu_to_be32(pcr);
 
-	cmd.auth = (struct tpm2b *)tpmb_put(b, tpm2_null_auth_size());
+	cmd.auth_size = (u32 *)tpmb_put(b, sizeof(u32));
+	if (cmd.auth_size == NULL) {
+		ret = -ENOMEM;
+		goto free;
+	}
+
+	cmd.auth = (struct tpms_auth_cmd *)tpmb_put(b, tpm2_null_auth_size());
 	if (cmd.auth == NULL) {
-		tpmb_free(b);
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto free;
 	}
 
-	cmd.auth->size = tpm2_null_auth(cmd.auth->buffer);
-	cmd.auth->size = cpu_to_be16(cmd.auth->size);
+	*cmd.auth_size = cpu_to_be32(tpm2_null_auth(cmd.auth));
 
 	size = convert_digest_list(digests);
 	if (size == 0) {
-		tpmb_free(b);
-		return -EINVAL;
+		ret = -ENOMEM;
+		goto free;
 	}
 
 	cmd.params = (u8 *)tpmb_put(b, size);
 	if (cmd.params == NULL) {
-		tpmb_free(b);
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto free;
 	}
 
 	memcpy(cmd.params, digests, size);
@@ -130,6 +137,8 @@ int tpm2_extend_pcr(struct tpm *t, u32 pcr,
 		break;
 	}
 
+free:
 	tpmb_free(b);
+out:
 	return ret;
 }
