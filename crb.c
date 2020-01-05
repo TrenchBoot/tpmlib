@@ -123,32 +123,6 @@ static void duration_c(void)
 	tpm_udelay(1000);
 }
 
-/* Timeouts defined in Table 16 of the PTP */
-
-/* TPM Timeout A: 750ms */
-static void timeout_a(void)
-{
-	tpm_udelay(750);
-}
-
-/* TPM Timeout B: 2000ms */
-static void timeout_b(void)
-{
-	tpm_udelay(2000);
-}
-
-/* TPM Timeout C: 200ms */
-static void timeout_c(void)
-{
-	tpm_udelay(200);
-}
-
-/* TPM Timeout D: 30ms */
-static void timeout_d(void)
-{
-	tpm_udelay(30);
-}
-
 static u8 is_idle(void)
 {
 	struct tpm_crb_ctrl_sts ctl_sts;
@@ -188,7 +162,7 @@ static u8 cmd_ready(void)
 	if (is_idle()) {
 		ctl_req.cmd_ready = 1;
 		tpm_write32(ctl_req.val, REGISTER(locality,TPM_CRB_CTRL_REQ));
-		timeout_c();
+		tpm2_timeout_c();
 
 		if (is_idle())
 			return -1;
@@ -208,7 +182,7 @@ static void go_idle(void)
 	tpm_write32(ctl_req.val, REGISTER(locality,TPM_CRB_CTRL_REQ));
 
 	/* pause to give tpm time to complete the request */
-	timeout_c();
+	tpm2_timeout_c();
 
 	return;
 }
