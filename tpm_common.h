@@ -9,6 +9,8 @@
 #ifndef _TPM_COMMON_H
 #define _TPM_COMMON_H
 
+#include <types.h>
+
 #ifndef __packed
 #define __packed __attribute__ ((packed))
 #endif
