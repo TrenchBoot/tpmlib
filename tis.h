@@ -49,6 +49,6 @@ u8 tis_request_locality(u8 l);
 void tis_relinquish_locality(void);
 u8 tis_init(struct tpm *t);
 size_t tis_send(struct tpmbuff *buf);
-size_t tis_recv(struct tpmbuff *buf);
+size_t tis_recv(enum tpm_family f, struct tpmbuff *buf);
 
 #endif
