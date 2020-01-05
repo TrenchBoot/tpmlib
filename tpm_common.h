@@ -26,7 +26,7 @@ struct tpm_header {
 	u16 tag;
 	u32 size;
 	u32 code;
-};
+} __packed;
 
 #define TPM_INTERFACE_ID_0	0x30
 #define TPM_TIS_INTF_ACTIVE	0x00
