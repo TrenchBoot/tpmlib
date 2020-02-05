@@ -7,9 +7,9 @@
  */
 
 #include <types.h>
-#include <tpm.h>
-#include <tpmbuff.h>
 
+#include "tpm.h"
+#include "tpmbuff.h"
 #include "tpm_common.h"
 #include "tpm1.h"
 #include "tis.h"

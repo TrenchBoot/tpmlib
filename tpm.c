@@ -6,8 +6,7 @@
  *
  */
 
-#include <tpm.h>
-
+#include "tpm.h"
 #include "tis.h"
 #include "crb.h"
 #include "tpm_common.h"

@@ -5,9 +5,8 @@
  *      Daniel P. Smith <dpsmith@apertussolutions.com>
  */
 
-#include <tpm.h>
-#include <tpmbuff.h>
-
+#include "tpm.h"
+#include "tpmbuff.h"
 #include "crb.h"
 #include "tpm_common.h"
 

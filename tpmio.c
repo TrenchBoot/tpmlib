@@ -6,8 +6,7 @@
  *
  */
 
-#include <tpm.h>
-
+#include "tpm.h"
 #include "tpm_common.h"
 
 void tpm_io_delay(void)

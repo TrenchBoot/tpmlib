@@ -9,9 +9,8 @@
  *
  */
 
-#include <tpm.h>
-#include <tpmbuff.h>
-
+#include "tpm.h"
+#include "tpmbuff.h"
 #include "tpm_common.h"
 #include "tis.h"
 
