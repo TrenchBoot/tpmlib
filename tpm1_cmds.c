@@ -10,9 +10,9 @@
  */
 
 #include <mem.h>
-#include <tpm.h>
-#include <tpmbuff.h>
 
+#include "tpm.h"
+#include "tpmbuff.h"
 #include "tis.h"
 #include "tpm_common.h"
 #include "tpm1.h"

@@ -6,9 +6,8 @@
  *
  */
 
-#include <tpm.h>
-#include <tpmbuff.h>
-
+#include "tpm.h"
+#include "tpmbuff.h"
 #include "tpm_common.h"
 #include "tpm2.h"
 #include "tpm2_auth.h"
