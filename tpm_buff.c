@@ -11,8 +11,8 @@
 #include "tpm.h"
 #include "tpmbuff.h"
 #include "tpm_common.h"
-#include "tpm1.h"
-#include "tis.h"
+
+#define STATIC_TIS_BUFFER_SIZE		1024
 
 #define TPM_CRB_DATA_BUFFER_OFFSET	0x80
 #define TPM_CRB_DATA_BUFFER_SIZE	3966

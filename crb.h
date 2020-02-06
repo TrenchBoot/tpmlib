@@ -13,9 +13,9 @@
 #define _CRB_H
 
 #include <types.h>
-#include <tpm.h>
 
-#define STATIC_TIS_BUFFER_SIZE 1024
+#include "tpm.h"
+
 /* TPM Interface Specification functions */
 u8 crb_request_locality(u8 l);
 void crb_relinquish_locality(void);

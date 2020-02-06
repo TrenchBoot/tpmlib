@@ -13,11 +13,9 @@
 #define _TIS_H
 
 #include <types.h>
-#include <tpm.h>
 
+#include "tpm.h"
 #include "tpm_common.h"
-
-#define STATIC_TIS_BUFFER_SIZE 1024
 
 /* macros to access registers at locality ’’l’’ */
 #define ACCESS(l)			(0x0000 | ((l) << 12))
