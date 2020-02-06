@@ -9,7 +9,9 @@
 #include <types.h>
 #include <mem.h>
 
+#include "tpm.h"
 #include "tpm2_constants.h"
+#include "tpm2.h"
 
 #define NULL_AUTH_SIZE 9
 

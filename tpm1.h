@@ -13,7 +13,8 @@
 #define _TPM1_H
 
 #include <types.h>
-#include <tpm.h>
+
+#include "tpm.h"
 
 /* Section 2.2.3 */
 #define TPM_AUTH_DATA_USAGE u8
