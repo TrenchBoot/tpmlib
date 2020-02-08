@@ -108,6 +108,6 @@ struct tpm_extend_resp {
 };
 
 /* TPM Commands */
-u8 tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d);
+int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d);
 
 #endif

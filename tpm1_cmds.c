@@ -17,16 +17,19 @@
 #include "tpm_common.h"
 #include "tpm1.h"
 
-u8 tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
+int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 {
+	int ret = 0;
 	struct tpmbuff *b = t->buff;
 	struct tpm_header *hdr;
 	struct tpm_extend_cmd *cmd;
 	struct tpm_extend_resp *resp;
 	size_t bytes;
 
-	if (! tpmb_reserve(b))
+	if (! tpmb_reserve(b)) {
+		ret = -ENOMEM;
 		goto out;
+	}
 
 	hdr = (struct tpm_header *)b->head;
 
@@ -35,8 +38,10 @@ u8 tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 
 	cmd = (struct tpm_extend_cmd *)
 		tpmb_put(b, sizeof(struct tpm_extend_cmd));
-	if (cmd == NULL)
+	if (cmd == NULL) {
+		ret = -ENOMEM;
 		goto free;
+	}
 
 	cmd->pcr_num = d->pcr;
 	memcpy(&(cmd->digest), &(d->digest), sizeof(TPM_DIGEST));
@@ -48,8 +53,10 @@ u8 tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 		/* Not implemented yet */
 		break;
 	case TPM_TIS:
-		if (hdr->size != tis_send(b))
+		if (hdr->size != tis_send(b)) {
+			ret = -EAGAIN;
 			goto free;
+		}
 		break;
 	case TPM_CRB:
 		/* Not valid for TPM 1.2 */
@@ -62,22 +69,28 @@ u8 tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 	tpmb_free(b);
 
 	/* Reset buffer for receive */
-	if (! tpmb_reserve(b))
+	if (! tpmb_reserve(b)) {
+		ret = -ENOMEM;
 		goto out;
+	}
 
 	hdr = (struct tpm_header *)b->head;
 	resp = (struct tpm_extend_resp *)
 		tpmb_put(b, sizeof(struct tpm_extend_resp));
-	if (resp == NULL)
+	if (resp == NULL) {
+		ret = -EAGAIN;
 		goto free;
+	}
 
 	switch (t->intf) {
 	case TPM_DEVNODE:
 		/* Not implemented yet */
 		break;
 	case TPM_TIS:
-		if (tpmb_size(b) != tis_recv(t->family, b))
+		if (tpmb_size(b) != tis_recv(t->family, b)) {
+			ret = -EAGAIN;
 			goto free;
+		}
 		break;
 	case TPM_CRB:
 		/* Not valid for TPM 1.2 */
@@ -90,11 +103,11 @@ u8 tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 	tpmb_free(b);
 
 	if (resp->ordinal != TPM_SUCCESS)
-		goto out;
+		ret = -EAGAIN;
 
-	return 1;
+	return ret;
 free:
 	tpmb_free(b);
 out:
-	return 0;
+	return ret;
 }
