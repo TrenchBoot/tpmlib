@@ -12,8 +12,6 @@
 #ifndef _TPM1_H
 #define _TPM1_H
 
-#include <types.h>
-
 #include "tpm.h"
 
 /* Section 2.2.3 */

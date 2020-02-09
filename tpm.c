@@ -6,6 +6,19 @@
  *
  */
 
+#ifdef LINUX_KERNEL
+
+#include <linux/types.h>
+#include <linux/string.h>
+#include <linux/errno.h>
+
+#elif defined LINUX_USERSPACE
+
+#include <string.h>
+#include <errno.h>
+
+#endif
+
 #include "tpm.h"
 #include "tis.h"
 #include "crb.h"

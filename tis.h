@@ -12,7 +12,11 @@
 #ifndef _TIS_H
 #define _TIS_H
 
-#include <types.h>
+#ifdef LINUX_USERSPACE
+
+#include <sys/types.h>
+
+#endif
 
 #include "tpm.h"
 #include "tpm_common.h"

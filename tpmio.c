@@ -6,6 +6,13 @@
  *
  */
 
+#ifdef LINUX_KERNEL
+
+#include <linux/types.h>
+#include <asm/io.h>
+
+#endif
+
 #include "tpm.h"
 #include "tpm_common.h"
 

@@ -5,6 +5,12 @@
  *      Daniel P. Smith <dpsmith@apertussolutions.com>
  */
 
+#ifdef LINUX_KERNEL
+
+#include <linux/types.h>
+
+#endif
+
 #include "tpm.h"
 #include "tpmbuff.h"
 #include "crb.h"

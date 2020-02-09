@@ -6,12 +6,25 @@
  *
  */
 
-#include <types.h>
-#include <mem.h>
+#ifdef LINUX_KERNEL
+
+#include <linux/types.h>
+#include <linux/string.h>
+
+#elif defined LINUX_USERSPACE
+
+#include <stdint.h>
+#include <sys/types.h>
+#include <string.h>
+#include <endian.h>
+
+#define cpu_to_be32 htobe32
+
+#endif
 
 #include "tpm.h"
-#include "tpm2_constants.h"
 #include "tpm2.h"
+#include "tpm2_constants.h"
 
 #define NULL_AUTH_SIZE 9
 

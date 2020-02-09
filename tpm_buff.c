@@ -6,7 +6,17 @@
  *
  */
 
-#include <types.h>
+#ifdef LINUX_KERNEL
+
+#include <linux/types.h>
+
+#elif defined LINUX_USERSPACE
+
+#include <stdint.h>
+#include <string.h>
+#include <sys/types.h>
+
+#endif
 
 #include "tpm.h"
 #include "tpmbuff.h"
