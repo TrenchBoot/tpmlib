@@ -12,8 +12,6 @@
 #ifndef _TPM2_H
 #define _TPM2_H
 
-#include <types.h>
-
 #include "tpm_common.h"
 #include "tpm2_constants.h"
 

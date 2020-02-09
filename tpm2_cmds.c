@@ -6,6 +6,23 @@
  *
  */
 
+#ifdef LINUX_KERNEL
+
+#include <asm/byteorder.h>
+#include <linux/types.h>
+#include <linux/errno.h>
+
+#elif defined LINUX_USERSPACE
+
+#include <string.h>
+#include <endian.h>
+#include <errno.h>
+
+#define cpu_to_be16 htobe16
+#define cpu_to_be32 htobe32
+
+#endif
+
 #include "tpm.h"
 #include "tpmbuff.h"
 #include "tpm_common.h"

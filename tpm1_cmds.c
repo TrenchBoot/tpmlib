@@ -9,7 +9,18 @@
  *
  */
 
-#include <mem.h>
+#ifdef LINUX_KERNEL
+
+#include <linux/string.h>
+#include <linux/types.h>
+
+#elif defined LINUX_USERSPACE
+
+#include <string.h>
+#include <errno.h>
+
+#endif
+
 
 #include "tpm.h"
 #include "tpmbuff.h"

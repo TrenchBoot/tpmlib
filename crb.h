@@ -12,7 +12,14 @@
 #ifndef _CRB_H
 #define _CRB_H
 
-#include <types.h>
+#ifdef LINUX_USERSPACE
+
+#include <stdint.h>
+#include <sys/types.h>
+
+#define u8 uint8_t
+
+#endif
 
 #include "tpm.h"
 
