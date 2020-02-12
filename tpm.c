@@ -90,6 +90,9 @@ u8 tpm_request_locality(struct tpm *t, u8 l)
 		break;
 	}
 
+	if (ret < TPM_MAX_LOCALITY)
+		t->buff = alloc_tpmbuff(t->intf, ret);
+
 	return ret;
 }
 
@@ -109,6 +112,8 @@ void tpm_relinquish_locality(struct tpm *t)
 		/* Not implemented yet */
 		break;
 	}
+
+	free(t->buff, t->intf);
 }
 
 #define MAX_TPM_EXTEND_SIZE 70 /* TPM2 SHA512 is the largest */
@@ -116,6 +121,11 @@ int tpm_extend_pcr(struct tpm *t, u32 pcr, u16 algo,
 		u8 *digest)
 {
 	int ret = 0;
+
+	if (t->buff == NULL) {
+		ret = -EINVAL;
+		goto out;
+	}
 
 	if (t->family == TPM12) {
 		struct tpm_digest d;
