@@ -13,6 +13,7 @@
 
 #include <linux/string.h>
 #include <linux/types.h>
+#include <linux/errno.h>
 
 #elif defined LINUX_USERSPACE
 

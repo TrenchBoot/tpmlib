@@ -20,6 +20,7 @@
 #endif
 
 #include "tpm.h"
+#include "tpmbuff.h"
 #include "tis.h"
 #include "crb.h"
 #include "tpm_common.h"
@@ -126,7 +127,7 @@ void tpm_relinquish_locality(struct tpm *t)
 		break;
 	}
 
-	free(t->buff, t->intf);
+	free_tpmbuff(t->buff, t->intf);
 }
 
 #define MAX_TPM_EXTEND_SIZE 70 /* TPM2 SHA512 is the largest */
