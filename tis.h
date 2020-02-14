@@ -37,14 +37,14 @@
 #define STS_DATA_EXPECT			0x08 /* (R) */
 #define STS_GO				0x20 /* (W) */
 
-static inline bool tis_data_available(int locality) 
-{ 
-        int status; 
+static inline bool tis_data_available(int locality)
+{
+        int status;
 
-        status = tpm_read8(STS(locality)); 
-        return ((status & (STS_DATA_AVAIL | STS_VALID)) == 
+        status = tpm_read8(STS(locality));
+        return ((status & (STS_DATA_AVAIL | STS_VALID)) ==
 		(STS_DATA_AVAIL | STS_VALID));
-} 
+}
 
 /* TPM Interface Specification functions */
 u8 tis_request_locality(u8 l);
