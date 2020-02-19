@@ -10,6 +10,7 @@
 
 #include <linux/types.h>
 #include <linux/string.h>
+#include <asm/byteorder.h>
 
 #elif defined LINUX_USERSPACE
 
