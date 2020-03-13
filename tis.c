@@ -28,6 +28,8 @@
 #include "tpm_common.h"
 #include "tis.h"
 
+#define TPM_BURST_MIN_DELAY 100 /* 100us */
+
 static u8 locality = TPM_NO_LOCALITY;
 
 static u32 burst_wait(void)
@@ -38,8 +40,9 @@ static u32 burst_wait(void)
 		count = tpm_read8(STS(locality) + 1);
 		count += tpm_read8(STS(locality) + 2) << 8;
 
+		/* Wait for FIFO to drain */
 		if (count == 0)
-			tpm_io_delay(); /* wait for FIFO to drain */
+			tpm_udelay(TPM_BURST_MIN_DELAY);
 	}
 
 	return count;
@@ -201,7 +204,7 @@ size_t tis_recv(enum tpm_family f, struct tpmbuff *buf)
 		goto err;
 
 	/* check for receive underflow */
-	if (! tis_data_available(locality))
+	if (!tis_data_available(locality))
 		goto err;
 
 	/* read last byte */
@@ -209,9 +212,8 @@ size_t tis_recv(enum tpm_family f, struct tpmbuff *buf)
 		goto err;
 
 	/* make sure we read everything */
-	if (tis_data_available(locality)) {
+	if (tis_data_available(locality))
 		goto err;
-	}
 
 	tpm_write8(STS_COMMAND_READY, STS(locality));
 

@@ -14,6 +14,7 @@
 #include <linux/string.h>
 #include <linux/types.h>
 #include <linux/errno.h>
+#include <asm/byteorder.h>
 
 #elif defined LINUX_USERSPACE
 
@@ -36,17 +37,17 @@ int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 	struct tpm_header *hdr;
 	struct tpm_extend_cmd *cmd;
 	struct tpm_extend_resp *resp;
-	size_t bytes;
+	size_t bytes, size;
 
-	if (! tpmb_reserve(b)) {
+	if (!tpmb_reserve(b)) {
 		ret = -ENOMEM;
 		goto out;
 	}
 
 	hdr = (struct tpm_header *)b->head;
 
-	hdr->tag = TPM_TAG_RQU_COMMAND;
-	hdr->code = TPM_ORD_EXTEND;
+	hdr->tag = cpu_to_be16(TPM_TAG_RQU_COMMAND);
+	hdr->code = cpu_to_be32(TPM_ORD_EXTEND);
 
 	cmd = (struct tpm_extend_cmd *)
 		tpmb_put(b, sizeof(struct tpm_extend_cmd));
@@ -55,66 +56,83 @@ int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 		goto free;
 	}
 
-	cmd->pcr_num = d->pcr;
+	cmd->pcr_num = cpu_to_be32(d->pcr);
 	memcpy(&(cmd->digest), &(d->digest), sizeof(TPM_DIGEST));
 
-	hdr->size = tpmb_size(b);
+	hdr->size = cpu_to_be32(tpmb_size(b));
 
 	switch (t->intf) {
 	case TPM_DEVNODE:
 		/* Not implemented yet */
+		ret = -ENOSYS;
 		break;
 	case TPM_TIS:
-		if (hdr->size != tis_send(b)) {
+		if (be32_to_cpu(hdr->size) != tis_send(b))
 			ret = -EAGAIN;
-			goto free;
-		}
 		break;
 	case TPM_CRB:
 		/* Not valid for TPM 1.2 */
+		ret = -ENODEV;
 		break;
 	case TPM_UEFI:
 		/* Not implemented yet */
+		ret = -ENOSYS;
 		break;
 	}
+
+	if (ret)
+		goto free;
 
 	tpmb_free(b);
 
 	/* Reset buffer for receive */
-	if (! tpmb_reserve(b)) {
+	if (!tpmb_reserve(b)) {
 		ret = -ENOMEM;
 		goto out;
 	}
 
 	hdr = (struct tpm_header *)b->head;
-	resp = (struct tpm_extend_resp *)
-		tpmb_put(b, sizeof(struct tpm_extend_resp));
-	if (resp == NULL) {
-		ret = -EAGAIN;
-		goto free;
-	}
+
+	/*
+	 * The extend receive operation returns a struct tpm_extend_resp
+	 * but the current implementation ignores the returned PCR value.
+	 */
 
 	switch (t->intf) {
 	case TPM_DEVNODE:
 		/* Not implemented yet */
+		ret = -ENOSYS;
 		break;
 	case TPM_TIS:
-		if (tpmb_size(b) != tis_recv(t->family, b)) {
+		/* tis_recv() will increase the buffer size */
+		size = tis_recv(t->family, b);
+		if (tpmb_size(b) != size)
 			ret = -EAGAIN;
-			goto free;
-		}
 		break;
 	case TPM_CRB:
 		/* Not valid for TPM 1.2 */
+		ret = -ENODEV;
 		break;
 	case TPM_UEFI:
 		/* Not implemented yet */
+		ret = -ENOSYS;
 		break;
 	}
 
 	tpmb_free(b);
 
-	if (resp->ordinal != TPM_SUCCESS)
+	if (ret)
+		goto out;
+
+	/*
+	 * On return, the code field is used for the return code out. Though
+	 * the commands specifications section 16.1 implies there is an
+	 * ordinal field, the return size and values point to this being
+	 * incorrect.
+	 *
+	 * Also tis_recv() converst the header back.
+	 */
+	if (hdr->code != TPM_SUCCESS)
 		ret = -EAGAIN;
 
 	return ret;

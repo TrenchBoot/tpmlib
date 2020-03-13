@@ -77,46 +77,46 @@ struct tpm_intf_capability {
 	};
 } __packed;
 
-void tpm_io_delay(void);
 void tpm_udelay(int loops);
+void tpm_mdelay(int ms);
 
 /* Timeouts defined in Table 16 from the TPM2 PTP and
      Table 15 from the PC Client TIS */
 /* TPM Timeout A: 750ms */
 static inline void timeout_a(void)
 {
-	tpm_udelay(750);
+	tpm_mdelay(750);
 }
 
 /* TPM Timeout B: 2000ms */
 static inline void timeout_b(void)
 {
-	tpm_udelay(2000);
+	tpm_mdelay(2000);
 }
 
 /* Timeouts C & D are different between 1.2 & 2.0 */
-/* TPM1.2 Timeout C: 200ms */
+/* TPM1.2 Timeout C: 750ms */
 static inline void tpm1_timeout_c(void)
 {
-	tpm_udelay(750);
+	tpm_mdelay(750);
 }
 
-/* TPM1.2 Timeout D: 30ms */
+/* TPM1.2 Timeout D: 750ms */
 static inline void tpm1_timeout_d(void)
 {
-	tpm_udelay(750);
+	tpm_mdelay(750);
 }
 
 /* TPM2 Timeout C: 200ms */
 static inline void tpm2_timeout_c(void)
 {
-	tpm_udelay(200);
+	tpm_mdelay(200);
 }
 
 /* TPM2 Timeout D: 30ms */
 static inline void tpm2_timeout_d(void)
 {
-	tpm_udelay(30);
+	tpm_mdelay(30);
 }
 
 u8 tpm_read8(u32 field);
