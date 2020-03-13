@@ -3,7 +3,6 @@
  *
  * Author(s):
  *      Daniel P. Smith <dpsmith@apertussolutions.com>
- *
  */
 
 #ifdef LINUX_KERNEL
@@ -16,7 +15,7 @@
 #include "tpm.h"
 #include "tpm_common.h"
 
-void tpm_io_delay(void)
+static noinline void tpm_io_delay(void)
 {
 	/* This is the default delay type in native_io_delay */
 	asm volatile ("outb %al, $0x80");
@@ -24,8 +23,16 @@ void tpm_io_delay(void)
 
 void tpm_udelay(int loops)
 {
-        while (loops--)
-                tpm_io_delay();     /* Approximately 1 us */
+	while (loops--)
+		tpm_io_delay();	/* Approximately 1 us */
+}
+
+void tpm_mdelay(int ms)
+{
+	int i;
+
+	for (i = 0; i < ms; i++)
+		tpm_udelay(1000);
 }
 
 u8 tpm_read8(u32 field)

@@ -113,19 +113,19 @@ struct tpm_crb_intf_id_ext {
 /* TPM Duration A: 20ms */
 static void duration_a(void)
 {
-	tpm_udelay(20);
+	tpm_mdelay(20);
 }
 
 /* TPM Duration B: 750ms */
 static void duration_b(void)
 {
-	tpm_udelay(750);
+	tpm_mdelay(750);
 }
 
 /* TPM Duration C: 1000ms */
 static void duration_c(void)
 {
-	tpm_udelay(1000);
+	tpm_mdelay(1000);
 }
 
 static u8 is_idle(void)

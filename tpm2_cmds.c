@@ -8,9 +8,10 @@
 
 #ifdef LINUX_KERNEL
 
-#include <asm/byteorder.h>
 #include <linux/types.h>
+#include <linux/string.h>
 #include <linux/errno.h>
+#include <asm/byteorder.h>
 
 #elif defined LINUX_USERSPACE
 
@@ -141,6 +142,7 @@ int tpm2_extend_pcr(struct tpm *t, u32 pcr,
 	switch (t->intf) {
 	case TPM_DEVNODE:
 		/* Not implemented yet */
+		ret = -ENOSYS;
 		break;
 	case TPM_TIS:
 		ret = tis_send(b);
@@ -150,6 +152,7 @@ int tpm2_extend_pcr(struct tpm *t, u32 pcr,
 		break;
 	case TPM_UEFI:
 		/* Not implemented yet */
+		ret = -ENOSYS;
 		break;
 	}
 
