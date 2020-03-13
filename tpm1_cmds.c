@@ -130,7 +130,7 @@ int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 	 * ordinal field, the return size and values point to this being
 	 * incorrect.
 	 *
-	 * Also tis_recv() converst the header back.
+	 * Also tis_recv() converts the header back to CPU endianess.
 	 */
 	if (hdr->code != TPM_SUCCESS)
 		ret = -EAGAIN;
