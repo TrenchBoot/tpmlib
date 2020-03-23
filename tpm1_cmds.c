@@ -23,7 +23,6 @@
 
 #endif
 
-
 #include "tpm.h"
 #include "tpmbuff.h"
 #include "tis.h"
@@ -64,7 +63,7 @@ int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 	switch (t->intf) {
 	case TPM_DEVNODE:
 		/* Not implemented yet */
-		ret = -ENOSYS;
+		ret = -EBADRQC;
 		break;
 	case TPM_TIS:
 		if (be32_to_cpu(hdr->size) != tis_send(b))
@@ -76,7 +75,7 @@ int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 		break;
 	case TPM_UEFI:
 		/* Not implemented yet */
-		ret = -ENOSYS;
+		ret = -EBADRQC;
 		break;
 	}
 
@@ -101,7 +100,7 @@ int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 	switch (t->intf) {
 	case TPM_DEVNODE:
 		/* Not implemented yet */
-		ret = -ENOSYS;
+		ret = -EBADRQC;
 		break;
 	case TPM_TIS:
 		/* tis_recv() will increase the buffer size */
@@ -115,7 +114,7 @@ int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 		break;
 	case TPM_UEFI:
 		/* Not implemented yet */
-		ret = -ENOSYS;
+		ret = -EBADRQC;
 		break;
 	}
 
@@ -130,7 +129,7 @@ int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 	 * ordinal field, the return size and values point to this being
 	 * incorrect.
 	 *
-	 * Also tis_recv() converts the header back to CPU endianess.
+	 * Also tis_recv() converts the header back to CPU endianness.
 	 */
 	if (hdr->code != TPM_SUCCESS)
 		ret = -EAGAIN;

@@ -39,10 +39,10 @@
 
 static inline bool tis_data_available(int locality)
 {
-        int status;
+	int status;
 
-        status = tpm_read8(STS(locality));
-        return ((status & (STS_DATA_AVAIL | STS_VALID)) ==
+	status = tpm_read8(STS(locality));
+	return ((status & (STS_DATA_AVAIL | STS_VALID)) ==
 		(STS_DATA_AVAIL | STS_VALID));
 }
 

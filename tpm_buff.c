@@ -92,7 +92,6 @@ struct tpmbuff *alloc_tpmbuff(enum tpm_hw_intf intf, u8 locality)
 	case TPM_DEVNODE:
 		/* TODO: need implementation */
 		goto err;
-		break;
 	case TPM_TIS:
 		if (b->head)
 			goto reset;
@@ -101,14 +100,13 @@ struct tpmbuff *alloc_tpmbuff(enum tpm_hw_intf intf, u8 locality)
 		b->truesize = STATIC_TIS_BUFFER_SIZE;
 		break;
 	case TPM_CRB:
-		b->head = (u8 *)(u64)(TPM_MMIO_BASE + (locality << 12) \
+		b->head = (u8 *)(u64)(TPM_MMIO_BASE + (locality << 12)
 			       + TPM_CRB_DATA_BUFFER_OFFSET);
 		b->truesize = TPM_CRB_DATA_BUFFER_SIZE;
 		break;
 	case TPM_UEFI:
 		/* Not implemented yet */
 		goto err;
-		break;
 	default:
 		goto err;
 	}

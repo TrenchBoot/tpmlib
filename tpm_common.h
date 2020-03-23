@@ -80,8 +80,11 @@ struct tpm_intf_capability {
 void tpm_udelay(int loops);
 void tpm_mdelay(int ms);
 
-/* Timeouts defined in Table 16 from the TPM2 PTP and
-     Table 15 from the PC Client TIS */
+/*
+ * Timeouts defined in Table 16 from the TPM2 PTP and
+ * Table 15 from the PC Client TIS
+ */
+
 /* TPM Timeout A: 750ms */
 static inline void timeout_a(void)
 {

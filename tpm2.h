@@ -25,7 +25,7 @@ struct tpm2b {
 };
 
 // Table 32  Definition of TPMA_SESSION Bits <  IN/OUT>
-struct tpma_session{
+struct tpma_session {
 	u8 continue_session  : 1;
 	u8 audit_exclusive   : 1;
 	u8 audit_reset       : 1;

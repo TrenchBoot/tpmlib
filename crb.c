@@ -34,7 +34,7 @@
 #define TPM_CRB_CTRL_RSP_ADDR	0x0068
 #define TPM_CRB_DATA_BUFFER	0x0080
 
-#define REGISTER(l,r)		(((l) << 12) | r)
+#define REGISTER(l, r)		(((l) << 12) | r)
 
 static u8 locality = TPM_NO_LOCALITY;
 
@@ -107,8 +107,10 @@ struct tpm_crb_intf_id_ext {
 	};
 } __packed;
 
-/* Durations derived from Table 15 of the PTP but is purely an artifact of this
- * implementation */
+/*
+ * Durations derived from Table 15 of the PTP but is purely an artifact of this
+ * implementation
+ */
 
 /* TPM Duration A: 20ms */
 static void duration_a(void)
@@ -132,10 +134,9 @@ static u8 is_idle(void)
 {
 	struct tpm_crb_ctrl_sts ctl_sts;
 
-	ctl_sts.val = tpm_read32(REGISTER(locality,TPM_CRB_CTRL_STS));
-	if (ctl_sts.tpm_idle == 1) {
+	ctl_sts.val = tpm_read32(REGISTER(locality, TPM_CRB_CTRL_STS));
+	if (ctl_sts.tpm_idle == 1)
 		return 1;
-	}
 
 	return 0;
 }
@@ -144,7 +145,7 @@ static u8 is_ready(void)
 {
 	struct tpm_crb_ctrl_sts ctl_sts;
 
-	ctl_sts.val = tpm_read32(REGISTER(locality,TPM_CRB_CTRL_STS));
+	ctl_sts.val = tpm_read32(REGISTER(locality, TPM_CRB_CTRL_STS));
 	return ctl_sts.val == 0;
 }
 
@@ -153,9 +154,8 @@ static u8 is_cmd_exec(void)
 	u32 ctrl_start;
 
 	ctrl_start = tpm_read32(REGISTER(locality, TPM_CRB_CTRL_START));
-	if (ctrl_start == 1) {
+	if (ctrl_start == 1)
 		return 1;
-	}
 
 	return 0;
 }
@@ -166,7 +166,7 @@ static u8 cmd_ready(void)
 
 	if (is_idle()) {
 		ctl_req.cmd_ready = 1;
-		tpm_write32(ctl_req.val, REGISTER(locality,TPM_CRB_CTRL_REQ));
+		tpm_write32(ctl_req.val, REGISTER(locality, TPM_CRB_CTRL_REQ));
 		tpm2_timeout_c();
 
 		if (is_idle())
@@ -184,12 +184,10 @@ static void go_idle(void)
 		return;
 
 	ctl_req.go_idle = 1;
-	tpm_write32(ctl_req.val, REGISTER(locality,TPM_CRB_CTRL_REQ));
+	tpm_write32(ctl_req.val, REGISTER(locality, TPM_CRB_CTRL_REQ));
 
 	/* pause to give tpm time to complete the request */
 	tpm2_timeout_c();
-
-	return;
 }
 
 static void crb_relinquish_locality_internal(u16 l)
@@ -213,8 +211,8 @@ u8 crb_request_locality(u8 l)
 	if (loc_state.loc_assigned == 1) {
 		if (loc_state.active_locality == l) {
 			locality = l;
-                        return locality;
-                }
+			return locality;
+		}
 
 		crb_relinquish_locality_internal(loc_state.loc_assigned);
 	}
@@ -242,13 +240,13 @@ u8 crb_init(struct tpm *t)
 	u8 i;
 	struct tpm_crb_intf_id_ext id;
 
-	for (i=0; i<=TPM_MAX_LOCALITY; i++)
+	for (i = 0; i <= TPM_MAX_LOCALITY; i++)
 		crb_relinquish_locality_internal(i);
 
 	if (crb_request_locality(0) == TPM_NO_LOCALITY)
 		return 0;
 
-	id.val = tpm_read32(REGISTER(0,TPM_CRB_INTF_ID+4));
+	id.val = tpm_read32(REGISTER(0, TPM_CRB_INTF_ID + 4));
 	t->vendor = ((id.vid & 0x00FF) << 8) | ((id.vid & 0xFF00) >> 8);
 	if ((t->vendor & 0xFFFF) == 0xFFFF)
 		return 0;
@@ -282,9 +280,10 @@ size_t crb_send(struct tpmbuff *buf)
 
 	tpm_write32(ctrl_start, REGISTER(locality, TPM_CRB_CTRL_START));
 
-	/* most command sequences this code is interested with operates with
+	/*
+	 * Most command sequences this code is interested with operates with
 	 * 20/750 duration/timeout schedule
-	 * */
+	 */
 	duration_a();
 	ctrl_start = tpm_read32(REGISTER(locality, TPM_CRB_CTRL_START));
 	if (ctrl_start != 0) {
