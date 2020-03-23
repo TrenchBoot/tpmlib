@@ -50,43 +50,43 @@ static u32 burst_wait(void)
 
 void tis_relinquish_locality(void)
 {
-        if (locality < TPM_MAX_LOCALITY)
+	if (locality < TPM_MAX_LOCALITY)
 		tpm_write8(ACCESS_RELINQUISH_LOCALITY, ACCESS(locality));
 
-        locality = TPM_NO_LOCALITY;
+	locality = TPM_NO_LOCALITY;
 }
 
 u8 tis_request_locality(u8 l)
 {
-        if (l > TPM_MAX_LOCALITY)
-                return TPM_NO_LOCALITY;
+	if (l > TPM_MAX_LOCALITY)
+		return TPM_NO_LOCALITY;
 
 	if (l == locality)
 		return locality;
 
 	tis_relinquish_locality();
 
-        tpm_write8(ACCESS_REQUEST_USE, ACCESS(l));
+	tpm_write8(ACCESS_REQUEST_USE, ACCESS(l));
 
-        /* wait for locality to be granted */
-        if (tpm_read8(ACCESS(l)) & ACCESS_ACTIVE_LOCALITY)
-                locality = l;
+	/* wait for locality to be granted */
+	if (tpm_read8(ACCESS(l)) & ACCESS_ACTIVE_LOCALITY)
+		locality = l;
 
-        return locality;
+	return locality;
 }
 
 u8 tis_init(struct tpm *t)
 {
-        locality = TPM_NO_LOCALITY;
+	locality = TPM_NO_LOCALITY;
 
-        if (tis_request_locality(0) != 0)
-                return 0;
+	if (tis_request_locality(0) != 0)
+		return 0;
 
-        t->vendor = tpm_read32(DID_VID(0));
-        if ((t->vendor & 0xFFFF) == 0xFFFF)
-                return 0;
+	t->vendor = tpm_read32(DID_VID(0));
+	if ((t->vendor & 0xFFFF) == 0xFFFF)
+		return 0;
 
-        return 1;
+	return 1;
 }
 
 size_t tis_send(struct tpmbuff *buf)
@@ -99,8 +99,8 @@ size_t tis_send(struct tpmbuff *buf)
 		return 0;
 
 	for (status = 0; (status & STS_COMMAND_READY) == 0; ) {
-	       tpm_write8(STS_COMMAND_READY, STS(locality));
-	       status = tpm_read8(STS(locality));
+		tpm_write8(STS_COMMAND_READY, STS(locality));
+		status = tpm_read8(STS(locality));
 	}
 
 	buf_ptr = buf->head;
@@ -196,7 +196,7 @@ size_t tis_recv(enum tpm_family f, struct tpmbuff *buf)
 	/* hdr->size = header + data */
 	expected = hdr->size - expected;
 	buf_ptr = tpmb_put(buf, expected);
-	if (! buf_ptr)
+	if (!buf_ptr)
 		goto err;
 
 	/* read all data, except last byte */

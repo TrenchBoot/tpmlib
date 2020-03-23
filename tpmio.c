@@ -37,28 +37,28 @@ void tpm_mdelay(int ms)
 
 u8 tpm_read8(u32 field)
 {
-	void *mmio_addr = (void*)(u64)(TPM_MMIO_BASE | field);
+	void *mmio_addr = (void *)(u64)(TPM_MMIO_BASE | field);
 
 	return ioread8(mmio_addr);
 }
 
 void tpm_write8(unsigned char val, u32 field)
 {
-	void *mmio_addr = (void*)(u64)(TPM_MMIO_BASE | field);
+	void *mmio_addr = (void *)(u64)(TPM_MMIO_BASE | field);
 
 	iowrite8(val, mmio_addr);
 }
 
 u32 tpm_read32(u32 field)
 {
-	void *mmio_addr = (void*)(u64)(TPM_MMIO_BASE | field);
+	void *mmio_addr = (void *)(u64)(TPM_MMIO_BASE | field);
 
 	return ioread32(mmio_addr);
 }
 
 void tpm_write32(unsigned int val, u32 field)
 {
-	void *mmio_addr = (void*)(u64)(TPM_MMIO_BASE | field);
+	void *mmio_addr = (void *)(u64)(TPM_MMIO_BASE | field);
 
 	iowrite32(val, mmio_addr);
 }

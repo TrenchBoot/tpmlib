@@ -51,8 +51,8 @@ static u16 convert_digest_list(struct tpml_digest_values *digests)
 	u16 size = sizeof(digests->count);
 	struct tpmt_ha *h = digests->digests;
 
-	for (i=0; i<digests->count; i++) {
-		switch(h->alg) {
+	for (i = 0; i < digests->count; i++) {
+		switch (h->alg) {
 		case TPM_ALG_SHA1:
 			h->alg = cpu_to_be16(h->alg);
 			h = (struct tpmt_ha *)((u8 *)h + SHA1_SIZE);
@@ -142,7 +142,7 @@ int tpm2_extend_pcr(struct tpm *t, u32 pcr,
 	switch (t->intf) {
 	case TPM_DEVNODE:
 		/* Not implemented yet */
-		ret = -ENOSYS;
+		ret = -EBADRQC;
 		break;
 	case TPM_TIS:
 		ret = tis_send(b);
@@ -152,7 +152,7 @@ int tpm2_extend_pcr(struct tpm *t, u32 pcr,
 		break;
 	case TPM_UEFI:
 		/* Not implemented yet */
-		ret = -ENOSYS;
+		ret = -EBADRQC;
 		break;
 	}
 
