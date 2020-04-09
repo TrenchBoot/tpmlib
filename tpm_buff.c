@@ -9,6 +9,7 @@
 #ifdef LINUX_KERNEL
 
 #include <linux/types.h>
+#include <linux/string.h>
 
 #elif defined LINUX_USERSPACE
 
