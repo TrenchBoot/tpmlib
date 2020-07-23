@@ -13,6 +13,10 @@
 #define __packed __attribute__ ((packed))
 #endif
 
+#ifndef __maybe_unused
+#define __maybe_unused  __attribute__ ((unused))
+#endif
+
 #define TPM_MMIO_BASE		0xFED40000
 #define TPM_MAX_LOCALITY	4
 
