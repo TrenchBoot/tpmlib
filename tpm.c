@@ -160,25 +160,21 @@ int tpm_extend_pcr(struct tpm *t, u32 pcr, u16 algo,
 
 		d = (struct tpml_digest_values *) buf;
 		d->count = 1;
+		d->digests->alg = algo;
 		switch (algo) {
 		case TPM_ALG_SHA1:
-			d->digests->alg = TPM_ALG_SHA1;
 			memcpy(d->digests->digest, digest, SHA1_SIZE);
 			break;
 		case TPM_ALG_SHA256:
-			d->digests->alg = TPM_ALG_SHA256;
 			memcpy(d->digests->digest, digest, SHA256_SIZE);
 			break;
 		case TPM_ALG_SHA384:
-			d->digests->alg = TPM_ALG_SHA384;
 			memcpy(d->digests->digest, digest, SHA384_SIZE);
 			break;
 		case TPM_ALG_SHA512:
-			d->digests->alg = TPM_ALG_SHA512;
 			memcpy(d->digests->digest, digest, SHA512_SIZE);
 			break;
 		case TPM_ALG_SM3_256:
-			d->digests->alg = TPM_ALG_SM3_256;
 			memcpy(d->digests->digest, digest, SM3256_SIZE);
 			break;
 		default:
