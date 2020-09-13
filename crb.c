@@ -160,7 +160,7 @@ static u8 is_cmd_exec(void)
 	return 0;
 }
 
-static u8 cmd_ready(void)
+static s8 cmd_ready(void)
 {
 	struct tpm_crb_ctrl_req ctl_req;
 
