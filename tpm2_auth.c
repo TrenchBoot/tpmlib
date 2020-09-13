@@ -40,7 +40,7 @@ u8 *tpm2_null_auth(struct tpmbuff *b)
 	u32 *handle;
 	u8 *auth = (u8 *)tpmb_put(b, NULL_AUTH_SIZE);
 	if (auth == NULL)
-		goto out;
+		return auth;
 
 	memset(auth, 0, NULL_AUTH_SIZE);
 
@@ -51,6 +51,5 @@ u8 *tpm2_null_auth(struct tpmbuff *b)
 	handle = (u32 *)auth;
 	*handle = cpu_to_be32(TPM_RS_PW);
 
-out:
 	return auth;
 }
