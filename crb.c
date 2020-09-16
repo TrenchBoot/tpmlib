@@ -285,9 +285,6 @@ u8 crb_init(struct tpm *t)
 	u8 i;
 	struct tpm_crb_intf_id_ext id;
 
-	for (i = 0; i <= TPM_MAX_LOCALITY; i++)
-		crb_relinquish_locality_internal(i);
-
 	if (crb_request_locality(0) == TPM_NO_LOCALITY)
 		return 0;
 
