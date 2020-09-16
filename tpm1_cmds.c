@@ -42,12 +42,15 @@ int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 		goto out;
 	}
 
-	if (!tpmb_reserve(b)) {
+	/* ensure buffer is free for use */
+	tpmb_free(b);
+
+	hdr = (struct tpm_header *)tpmb_reserve(b);
+	if (!hdr) {
 		ret = -ENOMEM;
 		goto out;
 	}
 
-	hdr = (struct tpm_header *)b->head;
 
 	hdr->tag = cpu_to_be16(TPM_TAG_RQU_COMMAND);
 	hdr->code = cpu_to_be32(TPM_ORD_EXTEND);
