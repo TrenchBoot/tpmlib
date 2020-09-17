@@ -217,10 +217,10 @@ u8 tis_init(struct tpm *t)
 	if ((t->vendor & 0xFFFF) == 0xFFFF)
 		return 0;
 
-	t.ops.request_locality = tis_request_locality;
-	t.ops.relinquish_locality = tis.relinquish_locality;
-	t.ops.send = tis_send;
-	t.ops.recv = tis_recv;
+	t->ops.request_locality = tis_request_locality;
+	t->ops.relinquish_locality = tis_relinquish_locality;
+	t->ops.send = tis_send;
+	t->ops.recv = tis_recv;
 
 	return 1;
 }

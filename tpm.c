@@ -9,6 +9,7 @@
 #ifdef LINUX_KERNEL
 
 #include <linux/types.h>
+#include <linux/const.h>
 #include <linux/string.h>
 #include <linux/errno.h>
 
@@ -143,9 +144,8 @@ int tpm_extend_pcr(struct tpm *t, u32 pcr, u16 algo,
 		}
 
 		ret = tpm2_extend_pcr(t, pcr, d);
-	} else {
+	} else
 		ret = -EINVAL;
-	}
 
 	return ret;
 }

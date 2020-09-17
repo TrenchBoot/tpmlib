@@ -274,7 +274,8 @@ size_t crb_send(struct tpmbuff *buf)
 	return buf->len;
 }
 
-size_t crb_recv(__attribute__((unused)) enum tpm_family, __attribute__((unused)) struct tpmbuff *buf)
+size_t crb_recv(__attribute__((unused)) enum tpm_family family,
+		__attribute__((unused)) struct tpmbuff *buf)
 {
 	/* noop, currently send waits until execution is complete*/
 	return 0;
@@ -298,10 +299,10 @@ u8 crb_init(struct tpm *t)
 	/* now move to ready state */
 	cmd_ready();
 
-	t.ops.request_locality = crb_request_locality;
-	t.ops.relinquish_locality = crb_relinquish_locality;
-	t.ops.send = crb_send;
-	t.ops.recv = crb_recv;
+	t->ops.request_locality = crb_request_locality;
+	t->ops.relinquish_locality = crb_relinquish_locality;
+	t->ops.send = crb_send;
+	t->ops.recv = crb_recv;
 
 	return 1;
 }
