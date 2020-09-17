@@ -9,6 +9,7 @@
 #ifdef LINUX_KERNEL
 
 #include <linux/types.h>
+#include <linux/const.h>
 #include <linux/string.h>
 #include <asm/byteorder.h>
 

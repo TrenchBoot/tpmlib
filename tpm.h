@@ -34,14 +34,14 @@ enum tpm_family {
 	TPM20
 };
 
-struct tpm_hw_ops {
-	u8 request_locality(u8);
-	void relinquish_locality(void);
-	size_t send(struct tpmbuff *);
-	size_t recv(enum tpm_family, struct tpmbuff *);
-};
-	
 struct tpmbuff;
+
+struct tpm_hw_ops {
+	u8 (*request_locality)(u8);
+	void (*relinquish_locality)(void);
+	size_t (*send)(struct tpmbuff *);
+	size_t (*recv)(enum tpm_family, struct tpmbuff *);
+};
 
 struct tpm {
 	u32 vendor;

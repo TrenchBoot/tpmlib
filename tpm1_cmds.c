@@ -73,7 +73,7 @@ int tpm1_pcr_extend(struct tpm *t, struct tpm_digest *d)
 	}
 
 	/* Reset buffer for receive */
-	tpmb_trim(tpmb_size(b));
+	tpmb_trim(b, tpmb_size(b));
 
 	hdr = (struct tpm_header *)b->head;
 	tpmb_put(b, sizeof(struct tpm_header));
