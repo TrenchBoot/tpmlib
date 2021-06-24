@@ -1,0 +1,16 @@
+Secure Launch Early TPM Extend Patches
+
+The original design of Secure Boot used a minimal TPM driver built into the
+compressed kernel. This was not an acceptable approach for approval in the
+upstream Linux kernel. The solution used there was to postpone extending the
+TPM PCRs until after the mainline kernel TPM driver was avalable during the
+late init phase of booting. This was a less than ideal compromise but there
+was no other way that could be found to satisfy their requests.
+
+This patch set will restore the early compressed kernel TPM driver and allow
+the PCR extends to happen very early in the boot before the mainline kernel is
+extracted and run.
+
+Current version base on:
+
+5.13-rc6 with Secure Launch patches from the LKML v2 posting
