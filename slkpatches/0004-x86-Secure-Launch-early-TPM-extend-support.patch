@@ -1,0 +1,453 @@
+From 727c8c4921947990f305bdb1ba2945dccba9358c Mon Sep 17 00:00:00 2001
+From: Ross Philipson <ross.philipson@oracle.com>
+Date: Thu, 24 Jun 2021 15:23:59 -0400
+Subject: [PATCH 4/4] x86: Secure Launch early TPM extend support
+
+This patch switches Secure Launch back to using the early compressed kernel
+TPM driver to do the PCR extends.
+
+Signed-off-by: Ross Philipson <ross.philipson@oracle.com>
+---
+ arch/x86/boot/compressed/sl_main.c | 111 ++++++++++++++++--------
+ arch/x86/kernel/slmodule.c         | 170 -------------------------------------
+ include/linux/slaunch.h            |   1 +
+ 3 files changed, 75 insertions(+), 207 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/sl_main.c b/arch/x86/boot/compressed/sl_main.c
+index 64ada2a..3aba35b 100644
+--- a/arch/x86/boot/compressed/sl_main.c
++++ b/arch/x86/boot/compressed/sl_main.c
+@@ -25,6 +25,11 @@
+ 
+ #include "misc.h"
+ #include "early_sha1.h"
++#define SL_TPM_UNDEF
++#include "tpm/tpm_common.h"
++#undef SL_TPM_UNDEF
++#include "tpm/tpm2_constants.h"
++#include "tpm/tpm.h"
+ 
+ #define CAPS_VARIABLE_MTRR_COUNT_MASK	0xff
+ 
+@@ -266,9 +271,18 @@ static void sl_find_event_log_algorithms(void)
+ 	       sizeof(struct tcg_efi_specid_event_algs) * efi_head->num_algs);
+ }
+ 
+-static void sl_tpm12_log_event(u32 pcr, u32 event_type,
+-			       const u8 *data, u32 length,
+-			       const u8 *event_data, u32 event_size)
++static void sl_extend_pcr(struct tpm *tpm, u32 pcr, u16 alg_id, u8 *digest)
++{
++	int ret;
++
++	ret = tpm_extend_pcr(tpm, pcr, alg_id, digest);
++	if (ret)
++		sl_txt_reset(SL_ERROR_TPM_EXTEND);
++}
++
++static void sl_tpm12_extend_log_event(struct tpm *tpm, u32 pcr, u32 event_type,
++				      const u8 *data, u32 length,
++				      const u8 *event_data, u32 event_size)
+ {
+ 	struct tcg_pcr_event *pcr_event;
+ 	struct sha1_state sctx = {0};
+@@ -284,6 +298,7 @@ static void sl_tpm12_log_event(u32 pcr, u32 event_type,
+ 		early_sha1_update(&sctx, data, length);
+ 		early_sha1_final(&sctx, &sha1_hash[0]);
+ 		memcpy(&pcr_event->digest[0], &sha1_hash[0], SHA1_DIGEST_SIZE);
++		sl_extend_pcr(tpm, pcr, TPM_ALG_SHA1, &sha1_hash[0]);
+ 	}
+ 	pcr_event->event_size = event_size;
+ 	if (event_size > 0)
+@@ -296,9 +311,9 @@ static void sl_tpm12_log_event(u32 pcr, u32 event_type,
+ 		sl_txt_reset(SL_ERROR_TPM_LOGGING_FAILED);
+ }
+ 
+-static void sl_tpm20_log_event(u32 pcr, u32 event_type,
+-			       const u8 *data, u32 length,
+-			       const u8 *event_data, u32 event_size)
++static void sl_tpm20_extend_log_event(struct tpm *tpm, u32 pcr, u32 event_type,
++				      const u8 *data, u32 length,
++				      const u8 *event_data, u32 event_size)
+ {
+ 	struct tcg_pcr_event2_head *head;
+ 	struct tcg_event_field *event;
+@@ -329,11 +344,13 @@ static void sl_tpm20_log_event(u32 pcr, u32 event_type,
+ 			sha256_init(&sctx256);
+ 			sha256_update(&sctx256, data, length);
+ 			sha256_final(&sctx256, &sha256_hash[0]);
++			sl_extend_pcr(tpm, pcr, TPM_ALG_SHA256, &sha256_hash[0]);
+ 		} else if (tpm_algs[head->count].alg_id == TPM_ALG_SHA1 &&
+ 			   length) {
+ 			early_sha1_init(&sctx1);
+ 			early_sha1_update(&sctx1, data, length);
+ 			early_sha1_final(&sctx1, &sha1_hash[0]);
++			sl_extend_pcr(tpm, pcr, TPM_ALG_SHA1, &sha1_hash[0]);
+ 		}
+ 
+ 		if (tpm_algs[head->count].alg_id == TPM_ALG_SHA256) {
+@@ -360,15 +377,15 @@ static void sl_tpm20_log_event(u32 pcr, u32 event_type,
+ 		sl_txt_reset(SL_ERROR_TPM_LOGGING_FAILED);
+ }
+ 
+-static void sl_tpm_extend_evtlog(u32 pcr, u32 type,
+-				 const u8 *data, u32 length, const char *desc)
++static void sl_tpm_extend_log_event(struct tpm *tpm, u32 pcr, u32 type,
++				    const u8 *data, u32 length, const char *desc)
+ {
+ 	if (tpm_log_ver == SL_TPM20_LOG)
+-		sl_tpm20_log_event(pcr, type, data, length,
+-				   (const u8 *)desc, strlen(desc));
++		sl_tpm20_extend_log_event(tpm, pcr, type, data, length,
++					  (const u8 *)desc, strlen(desc));
+ 	else
+-		sl_tpm12_log_event(pcr, type, data, length,
+-				   (const u8 *)desc, strlen(desc));
++		sl_tpm12_extend_log_event(tpm, pcr, type, data, length,
++					  (const u8 *)desc, strlen(desc));
+ }
+ 
+ asmlinkage __visible void sl_check_region(void *base, u32 size)
+@@ -378,6 +395,7 @@ asmlinkage __visible void sl_check_region(void *base, u32 size)
+ 
+ asmlinkage __visible void sl_main(void *bootparams)
+ {
++	struct tpm *tpm;
+ 	struct boot_params *bp;
+ 	struct setup_data *data;
+ 	struct txt_os_mle_data *os_mle_data;
+@@ -395,6 +413,14 @@ asmlinkage __visible void sl_main(void *bootparams)
+ 	if (!(sl_cpu_type & SL_CPU_INTEL))
+ 		return;
+ 
++	/*
++	 * If enable_tpm fails there is no point going on. The entire secure
++	 * environment depends on this and the other TPM operations succeeding.
++	 */
++	tpm = enable_tpm();
++	if (!tpm)
++		sl_txt_reset(SL_ERROR_TPM_INIT);
++
+ 	/* Locate the TPM event log. */
+ 	sl_find_event_log();
+ 
+@@ -408,19 +434,27 @@ asmlinkage __visible void sl_main(void *bootparams)
+ 	if (tpm_log_ver == SL_TPM20_LOG)
+ 		sl_find_event_log_algorithms();
+ 
++	/*
++	 * Locality 2 is being opened so that the DRTM PCRs can be updated,
++	 * specifically 17 and 18. These measurements can also be sent to
++	 * DRTM PCRs 19 and 20 if the kernel is configured for this.
++	 */
++	if (tpm_request_locality(tpm, 2) == TPM_NO_LOCALITY)
++		sl_txt_reset(SL_ERROR_TPM_GET_LOC);
++
+ 	/* Sanitize them before measuring */
+ 	boot_params = (struct boot_params *)bootparams;
+ 	sanitize_boot_params(boot_params);
+ 
+ 	/* Place event log NO_ACTION tags before and after measurements */
+-	sl_tpm_extend_evtlog(17, TXT_EVTYPE_SLAUNCH_START, NULL, 0, "");
++	sl_tpm_extend_log_event(tpm, 17, TXT_EVTYPE_SLAUNCH_START, NULL, 0, "");
+ 
+ 	sl_check_pmr_coverage(bootparams, PAGE_SIZE, false);
+ 
+ 	/* Measure the zero page/boot params */
+-	sl_tpm_extend_evtlog(pcr_config, TXT_EVTYPE_SLAUNCH,
+-			     bootparams, PAGE_SIZE,
+-			     "Measured boot parameters");
++	sl_tpm_extend_log_event(tpm, pcr_config, TXT_EVTYPE_SLAUNCH,
++				bootparams, PAGE_SIZE,
++				"Measured boot parameters");
+ 
+ 	/* Now safe to use boot params */
+ 	bp = (struct boot_params *)bootparams;
+@@ -435,10 +469,10 @@ asmlinkage __visible void sl_main(void *bootparams)
+ 		sl_check_pmr_coverage((void *)cmdline,
+ 				      bp->hdr.cmdline_size, true);
+ 
+-		sl_tpm_extend_evtlog(pcr_config, TXT_EVTYPE_SLAUNCH,
+-				     (u8 *)cmdline,
+-				     bp->hdr.cmdline_size,
+-				     "Measured Kernel command line");
++		sl_tpm_extend_log_event(tpm, pcr_config, TXT_EVTYPE_SLAUNCH,
++					(u8 *)cmdline,
++					bp->hdr.cmdline_size,
++					"Measured Kernel command line");
+ 	}
+ 
+ 	/*
+@@ -450,10 +484,10 @@ asmlinkage __visible void sl_main(void *bootparams)
+ 		sl_check_pmr_coverage(((u8 *)data) + sizeof(struct setup_data),
+ 				      data->len, true);
+ 
+-		sl_tpm_extend_evtlog(pcr_config, TXT_EVTYPE_SLAUNCH,
+-				     ((u8 *)data) + sizeof(struct setup_data),
+-				     data->len,
+-				     "Measured Kernel setup_data");
++		sl_tpm_extend_log_event(tpm, pcr_config, TXT_EVTYPE_SLAUNCH,
++					((u8 *)data) + sizeof(struct setup_data),
++					data->len,
++					"Measured Kernel setup_data");
+ 
+ 		data = (struct setup_data *)(unsigned long)data->next;
+ 	}
+@@ -469,10 +503,10 @@ asmlinkage __visible void sl_main(void *bootparams)
+ 			((u64)bp->efi_info.efi_memmap_hi << 32));
+ 
+ 	if (mmap)
+-		sl_tpm_extend_evtlog(pcr_config, TXT_EVTYPE_SLAUNCH,
+-				     (void *)mmap,
+-				     bp->efi_info.efi_memmap_size,
+-				     "Measured EFI memory map");
++		sl_tpm_extend_log_event(tpm, pcr_config, TXT_EVTYPE_SLAUNCH,
++					(void *)mmap,
++					bp->efi_info.efi_memmap_size,
++					"Measured EFI memory map");
+ 
+ 	/* Measure any external initrd */
+ 	if (bp->hdr.ramdisk_image != 0 && bp->hdr.ramdisk_size != 0) {
+@@ -488,10 +522,10 @@ asmlinkage __visible void sl_main(void *bootparams)
+ 		sl_check_pmr_coverage((void *)ramdisk,
+ 				      bp->hdr.ramdisk_size, true);
+ 
+-		sl_tpm_extend_evtlog(pcr_image, TXT_EVTYPE_SLAUNCH,
+-				     (u8 *)(ramdisk),
+-				     bp->hdr.ramdisk_size,
+-				     "Measured initramfs");
++		sl_tpm_extend_log_event(tpm, pcr_image, TXT_EVTYPE_SLAUNCH,
++					(u8 *)(ramdisk),
++					bp->hdr.ramdisk_size,
++					"Measured initramfs");
+ 	}
+ 
+ 	/*
+@@ -508,16 +542,19 @@ asmlinkage __visible void sl_main(void *bootparams)
+ 
+ 	/* No PMR check is needed, the TXT heap is covered by the DPR */
+ 
+-	sl_tpm_extend_evtlog(pcr_config, TXT_EVTYPE_SLAUNCH,
+-			     (u8 *)&os_mle_tmp,
+-			     sizeof(struct txt_os_mle_data),
+-			     "Measured TXT OS-MLE data");
++	sl_tpm_extend_log_event(tpm, pcr_config, TXT_EVTYPE_SLAUNCH,
++				(u8 *)&os_mle_tmp,
++				sizeof(struct txt_os_mle_data),
++				"Measured TXT OS-MLE data");
+ 
+-	sl_tpm_extend_evtlog(17, TXT_EVTYPE_SLAUNCH_END, NULL, 0, "");
++	sl_tpm_extend_log_event(tpm, 17, TXT_EVTYPE_SLAUNCH_END, NULL, 0, "");
+ 
+ 	/*
+ 	 * Now that the OS-MLE data is measured, ensure the MTRR and
+ 	 * misc enable MSRs are what we expect.
+ 	 */
+ 	sl_txt_validate_msrs(os_mle_data);
++
++	tpm_relinquish_locality(tpm);
++	free_tpm(tpm);
+ }
+diff --git a/arch/x86/kernel/slmodule.c b/arch/x86/kernel/slmodule.c
+index 807f9ca..a202de8 100644
+--- a/arch/x86/kernel/slmodule.c
++++ b/arch/x86/kernel/slmodule.c
+@@ -293,174 +293,6 @@ static void slaunch_intel_evtlog(void __iomem *txt)
+ 			SL_ERROR_TPM_INVALID_LOG20);
+ }
+ 
+-static void slaunch_tpm20_extend_event(struct tpm_chip *tpm, void __iomem *txt,
+-				       struct tcg_pcr_event2_head *event)
+-{
+-	struct tpm_digest *digests;
+-	u16 *alg_id_field = (u16 *)((u8 *)event +
+-				    sizeof(struct tcg_pcr_event2_head));
+-	u8 *dptr;
+-	int ret;
+-	u32 i, j;
+-
+-	digests = kcalloc(tpm->nr_allocated_banks, sizeof(*digests),
+-			  GFP_KERNEL);
+-	if (!digests)
+-		slaunch_txt_reset(txt,
+-			"Failed to allocate array of digests\n",
+-			SL_ERROR_GENERIC);
+-
+-	for (i = 0; i < tpm->nr_allocated_banks; i++)
+-		digests[i].alg_id = tpm->allocated_banks[i].alg_id;
+-
+-
+-	/* Early SL code ensured there was a max count of 2 digests */
+-	for (i = 0; i < event->count; i++) {
+-		dptr = (u8 *)alg_id_field + sizeof(u16);
+-
+-		for (j = 0; j < tpm->nr_allocated_banks; j++) {
+-			if (digests[j].alg_id != *alg_id_field)
+-				continue;
+-
+-			switch (digests[j].alg_id) {
+-			case TPM_ALG_SHA256:
+-				memcpy(&digests[j].digest[0], dptr,
+-				       SHA256_DIGEST_SIZE);
+-				alg_id_field = (u16 *)((u8 *)alg_id_field +
+-					SHA256_DIGEST_SIZE + sizeof(u16));
+-				break;
+-			case TPM_ALG_SHA1:
+-				memcpy(&digests[j].digest[0], dptr,
+-				       SHA1_DIGEST_SIZE);
+-				alg_id_field = (u16 *)((u8 *)alg_id_field +
+-					SHA1_DIGEST_SIZE + sizeof(u16));
+-				break;
+-			default:
+-				;
+-			}
+-		}
+-	}
+-
+-	ret = tpm_pcr_extend(tpm, event->pcr_idx, digests);
+-	if (ret) {
+-		pr_err("Error extending TPM20 PCR, result: %d\n", ret);
+-		slaunch_txt_reset(txt,
+-			"Failed to extend TPM20 PCR\n",
+-			SL_ERROR_TPM_EXTEND);
+-	}
+-
+-	kfree(digests);
+-}
+-
+-static void slaunch_tpm20_extend(struct tpm_chip *tpm, void __iomem *txt)
+-{
+-	struct tcg_pcr_event *event_header =
+-		(struct tcg_pcr_event *)(sl_evtlog.addr +
+-					 evtlog20->first_record_offset);
+-	/* Skip first TPM 1.2 event to get to first TPM 2.0 event */
+-	struct tcg_pcr_event2_head *event =
+-		(struct tcg_pcr_event2_head *)((u8 *)event_header +
+-					       sizeof(struct tcg_pcr_event) +
+-					       event_header->event_size);
+-	int start = 0, end = 0, size;
+-
+-	while ((void  *)event < sl_evtlog.addr + evtlog20->next_record_offset) {
+-		size = __calc_tpm2_event_size(event, event_header, false);
+-		if (!size)
+-			slaunch_txt_reset(txt,
+-				"TPM20 invalid event in event log\n",
+-				SL_ERROR_TPM_INVALID_EVENT);
+-
+-		/*
+-		 * Marker events indicate where the Secure Launch early stub
+-		 * started and ended adding post launch events.
+-		 */
+-		if (event->event_type == TXT_EVTYPE_SLAUNCH_END) {
+-			end = 1;
+-			break;
+-		} else if (event->event_type == TXT_EVTYPE_SLAUNCH_START) {
+-			start = 1;
+-			goto next;
+-		}
+-
+-		if (start)
+-			slaunch_tpm20_extend_event(tpm, txt, event);
+-
+-next:
+-		event = (struct tcg_pcr_event2_head *)((u8 *)event + size);
+-	}
+-
+-	if (!start || !end)
+-		slaunch_txt_reset(txt,
+-			"Missing start or end events for extending TPM20 PCRs\n",
+-			SL_ERROR_TPM_EXTEND);
+-}
+-
+-static void slaunch_tpm12_extend(struct tpm_chip *tpm, void __iomem *txt)
+-{
+-	struct tpm12_event_log_header *event_header =
+-		(struct tpm12_event_log_header *)sl_evtlog.addr;
+-	struct tcg_pcr_event *event =
+-		(struct tcg_pcr_event *)((u8 *)event_header +
+-				sizeof(struct tpm12_event_log_header));
+-	struct tpm_digest digest;
+-	int start = 0, end = 0, size, ret;
+-
+-	while ((void  *)event < sl_evtlog.addr + event_header->next_event_offset) {
+-		size = sizeof(struct tcg_pcr_event) + event->event_size;
+-
+-		/*
+-		 * Marker events indicate where the Secure Launch early stub
+-		 * started and ended adding post launch events.
+-		 */
+-		if (event->event_type == TXT_EVTYPE_SLAUNCH_END) {
+-			end = 1;
+-			break;
+-		} else if (event->event_type == TXT_EVTYPE_SLAUNCH_START) {
+-			start = 1;
+-			goto next;
+-		}
+-
+-		if (start) {
+-			memset(&digest.digest[0], 0, TPM_MAX_DIGEST_SIZE);
+-			digest.alg_id = TPM_ALG_SHA1;
+-			memcpy(&digest.digest[0], &event->digest[0],
+-			       SHA1_DIGEST_SIZE);
+-
+-			ret = tpm_pcr_extend(tpm, event->pcr_idx, &digest);
+-			if (ret) {
+-				pr_err("Error extending TPM12 PCR, result: %d\n", ret);
+-				slaunch_txt_reset(txt,
+-					"Failed to extend TPM12 PCR\n",
+-					SL_ERROR_TPM_EXTEND);
+-			}
+-		}
+-
+-next:
+-		event = (struct tcg_pcr_event *)((u8 *)event + size);
+-	}
+-
+-	if (!start || !end)
+-		slaunch_txt_reset(txt,
+-			"Missing start or end events for extending TPM12 PCRs\n",
+-			SL_ERROR_TPM_EXTEND);
+-}
+-
+-static void slaunch_pcr_extend(void __iomem *txt)
+-{
+-	struct tpm_chip *tpm;
+-
+-	tpm = tpm_default_chip();
+-	if (!tpm)
+-		slaunch_txt_reset(txt,
+-			"Could not get default TPM chip\n",
+-			SL_ERROR_TPM_INIT);
+-	if (evtlog20)
+-		slaunch_tpm20_extend(tpm, txt);
+-	else
+-		slaunch_tpm12_extend(tpm, txt);
+-}
+-
+ static int __init slaunch_module_init(void)
+ {
+ 	void __iomem *txt;
+@@ -478,8 +310,6 @@ static int __init slaunch_module_init(void)
+ 	/* Only Intel TXT is supported at this point */
+ 	slaunch_intel_evtlog(txt);
+ 
+-	slaunch_pcr_extend(txt);
+-
+ 	iounmap(txt);
+ 
+ 	return slaunch_expose_securityfs();
+diff --git a/include/linux/slaunch.h b/include/linux/slaunch.h
+index dd8d92e..32e055e 100644
+--- a/include/linux/slaunch.h
++++ b/include/linux/slaunch.h
+@@ -152,6 +152,7 @@
+ #define SL_ERROR_TPM_NUMBER_ALGS	0xc000801f
+ #define SL_ERROR_TPM_UNKNOWN_DIGEST	0xc0008020
+ #define SL_ERROR_TPM_INVALID_EVENT	0xc0008021
++#define SL_ERROR_TPM_GET_LOC		0xc0008022
+ 
+ /*
+  * Secure Launch Defined Limits
+-- 
+1.8.3.1
+
