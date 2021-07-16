@@ -283,7 +283,6 @@ size_t crb_recv(__attribute__((unused)) enum tpm_family family,
 
 u8 crb_init(struct tpm *t)
 {
-	u8 i;
 	struct tpm_crb_intf_id_ext id;
 
 	if (crb_request_locality(0) == TPM_NO_LOCALITY)
